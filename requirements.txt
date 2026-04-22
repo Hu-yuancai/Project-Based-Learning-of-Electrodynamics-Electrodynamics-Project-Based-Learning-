@@ -1,0 +1,13 @@
+numpy==1.26.4
+scipy==1.13.0
+scikit-learn==1.4.2
+torch==2.2.1
+torchvision==0.17.1
+matplotlib==3.8.4
+Pillow==10.2.0
+tqdm==4.66.2
+
+# 注意：
+# 1. PyTorch 的安装可能需要特定的 CUDA 版本
+#    有关详细信息，请访问: https://pytorch.org/get-started/locally/
+# 2. 确保 Python 版本 >= 3.8
