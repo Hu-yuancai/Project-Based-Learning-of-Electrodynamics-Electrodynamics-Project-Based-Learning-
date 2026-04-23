@@ -447,7 +447,7 @@ def main_metasurface_design(inverse_model=None, scaler_X=None, forward_model=Non
         X, Y = simulator.generate_dataset(n_samples=5000)
         Y_phase = Y[:, 1]
         
-        forward_model, scaler_X, _, _ = train_forward_model(X, Y_phase, epochs=300, verbose=False)
+        forward_model, history, scaler_X = train_forward_model(X, Y_phase, epochs=300, verbose=False)
         
         tandem = TandemTrainer(forward_model, scaler_X)
         tandem.train_with_progress(epochs=500, verbose=False)

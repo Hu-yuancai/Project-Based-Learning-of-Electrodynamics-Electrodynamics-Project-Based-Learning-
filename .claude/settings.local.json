@@ -1,0 +1,23 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(python -c \"import py_compile; py_compile.compile\\('d:/all_subjects/各学科作业（大二下）/电动力学/项目化学习/forward_model.py', doraise=True\\); print\\('OK'\\)\")",
+      "Bash(python -c \"import py_compile; py_compile.compile\\('d:/all_subjects/各学科作业（大二下）/电动力学/项目化学习/inverse_design.py', doraise=True\\); print\\('OK'\\)\")",
+      "Bash(python -c \"import py_compile; py_compile.compile\\('d:/all_subjects/各学科作业（大二下）/电动力学/项目化学习/data_generator.py', doraise=True\\); print\\('OK'\\)\")",
+      "Bash(python -c \"import py_compile; py_compile.compile\\('d:/all_subjects/各学科作业（大二下）/电动力学/项目化学习/main.py', doraise=True\\); print\\('OK'\\)\")",
+      "Bash(python test_core_logic.py)",
+      "Bash(python -c ' *)",
+      "Bash(cd /tmp)",
+      "Bash(\"d:/all_subjects/各学科作业（大二下）/电动力学/项目化学习/metasurface_env/Scripts/python.exe\" -c \"import torch; print\\(torch.__version__\\)\")",
+      "Bash(python -c \"import torch; print\\(torch.__version__\\)\")",
+      "Bash(where python *)",
+      "Bash(D:\\\\python\\\\python.exe -c \"import torch; print\\(torch.__version__\\)\")",
+      "Bash(C:\\\\Users\\\\23229\\\\AppData\\\\Local\\\\Programs\\\\Python\\\\Python312\\\\python.exe -c \"import torch; print\\(torch.__version__\\)\")",
+      "Bash(cmd /c \"D:\\\\python\\\\python.exe -c \\\\\"import torch; print\\(torch.__version__\\)\\\\\" 2>&1\")",
+      "Bash(powershell -Command \"& 'D:\\\\python\\\\python.exe' -c 'import torch; print\\(torch.__version__\\)'\")",
+      "Bash(powershell -Command \"& 'C:\\\\Users\\\\23229\\\\AppData\\\\Local\\\\Programs\\\\Python\\\\Python312\\\\python.exe' -c 'import torch; print\\(torch.__version__\\)'\")",
+      "Bash(powershell -Command \"Set-Location 'C:\\\\Users\\\\23229'; & 'C:\\\\Users\\\\23229\\\\AppData\\\\Local\\\\Programs\\\\Python\\\\Python312\\\\python.exe' -c 'import sys; sys.path.insert\\(0, \\\\\"D:/all_subjects/各学科作业（大二下）/电动力学/项目化学习\\\\\"\\); import data_generator; print\\(\\\\\"data_generator OK\\\\\"\\)'\")",
+      "Bash(powershell -Command ' *)"
+    ]
+  }
+}

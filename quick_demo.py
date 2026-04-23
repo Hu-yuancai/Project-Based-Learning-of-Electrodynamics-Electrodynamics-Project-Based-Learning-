@@ -66,18 +66,18 @@ def quick_demo():
     
     # ===== 步骤 2：训练正向网络 =====
     print("\n[2/4] 训练正向网络 (50 epochs, 快速模式)...")
-    forward_model, scaler_X, train_losses, val_losses = train_forward_model(
+    forward_model, history, scaler_X = train_forward_model(
         X, Y_phase, epochs=50, batch_size=128, verbose=False
     )
     
     # 快速验证
-    error = validate_forward_model(forward_model, scaler_X, X, Y_phase)
-    print(f"✓ 正向网络完成，平均相位误差: {error.mean():.2f}°")
+    metrics = validate_forward_model(forward_model, scaler_X, X, Y_phase, plot_results=False)
+    print(f"✓ 正向网络完成，平均相位误差: {metrics['mae_phi']:.2f}°")
     
     # 保存训练曲线
     fig, ax = plt.subplots(figsize=(10, 6))
-    ax.plot(train_losses, 'b-', label='训练 Loss')
-    ax.plot(val_losses, 'r-', label='验证 Loss')
+    ax.plot(history['train_loss'], 'b-', label='训练 Loss')
+    ax.plot(history['val_loss'], 'r-', label='验证 Loss')
     ax.set_xlabel('Epoch')
     ax.set_ylabel('Loss')
     ax.set_title('正向网络训练曲线')

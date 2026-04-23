@@ -21,23 +21,19 @@ import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib
 from pathlib import Path
+from sklearn.preprocessing import StandardScaler
+from typing import Tuple, Optional
 
 # ===== 配置中文字体 =====
-def setup_chinese_font():
-    """自动检测并配置 matplotlib 中文字体"""
-    try:
-        # 优先使用 SimHei（黑体）
-        if Path('C:/Windows/Fonts/simhei.ttf').exists():
-            matplotlib.font_manager.fontManager.addfont('C:/Windows/Fonts/simhei.ttf')
-            plt.rcParams['font.sans-serif'] = ['SimHei']
-        # 备选方案
-        else:
-            plt.rcParams['font.sans-serif'] = ['SimHei', 'DejaVu Sans']
-        plt.rcParams['axes.unicode_minus'] = False  # 正确显示负号
-    except Exception as e:
-        print(f"警告：字体配置失败 {e}，将使用默认字体")
-
-setup_chinese_font()
+try:
+    if Path('C:/Windows/Fonts/simhei.ttf').exists():
+        matplotlib.font_manager.fontManager.addfont('C:/Windows/Fonts/simhei.ttf')
+        plt.rcParams['font.sans-serif'] = ['SimHei']
+    else:
+        plt.rcParams['font.sans-serif'] = ['SimHei', 'DejaVu Sans']
+    plt.rcParams['axes.unicode_minus'] = False
+except Exception:
+    pass
 
 
 class InverseDesigner(nn.Module):
@@ -119,17 +115,17 @@ class InverseDesigner(nn.Module):
 class TandemTrainer:
     """
     Tandem 网络训练器
-    
+
     核心思想：
     1. 正向网络冻结（weights 不更新）
     2. 逆向网络的目标不是预测准确的 (L, W)，而是预测能产生目标相位的任意 (L, W)
     3. Loss 定义在相位空间，而非几何空间
     """
-    
+
     def __init__(self, forward_model, scaler_X, L_range=(60, 240), W_range=(60, 240)):
         """
         初始化 Tandem 训练器
-        
+
         参数:
         - forward_model: 训练好的正向神经网络
         - scaler_X: 用于标准化输入的 StandardScaler 对象
@@ -140,63 +136,33 @@ class TandemTrainer:
         self.scaler_X = scaler_X
         self.L_min, self.L_max = L_range
         self.W_min, self.W_max = W_range
-        
+
         # ===== 冻结正向网络 =====
         # 这是关键步骤：我们只想更新逆向网络的权重
         for param in self.forward_model.parameters():
             param.requires_grad = False
-        
-        self.inverse_model = InverseDesigner()
-        
+
+        # 设置为评估模式（BatchNorm 等不会更新）
+        self.forward_model.eval()
+
+        # 初始化逆向网络
+        self.inverse_model = InverseDesigner(L_range=L_range, W_range=W_range)
+
         print(f"\n正向网络参数已冻结（requires_grad=False）")
         print(f"可训练参数仅为逆向网络的权重")
-    
-    def normalize_geometry(self, L, W):
-        """
-        标准化几何参数到 [0, 1] 范围
-        
-        参数:
-        - L, W: 物理尺寸 (nm)
-        
-        返回:
-        - [L_norm, W_norm]: 归一化后的参数
-        """
-        L_norm = (L - self.L_min) / (self.L_max - self.L_min)
-        W_norm = (W - self.W_min) / (self.W_max - self.W_min)
-        return torch.stack([L_norm, W_norm], dim=-1)
-    
-    def denormalize_geometry(self, norm):
-        """
-        反归一化：从 [0, 1] 映射回物理范围
-        
-        参数:
-        - norm: 归一化的参数，形状 [batch_size, 2]
-        
-        返回:
-        - (L, W): 物理尺寸 (nm)
-        """
-        if isinstance(norm, np.ndarray):
-            norm = torch.tensor(norm, dtype=torch.float32)
-        
-        if norm.dim() == 1:
-            norm = norm.unsqueeze(0)
-        
-        L = norm[:, 0] * (self.L_max - self.L_min) + self.L_min
-        W = norm[:, 1] * (self.W_max - self.W_min) + self.W_min
-        return L, W
-    
+
     def tandem_loss(self, target_phase, predicted_phase, weight_smoothness=0.01):
         """
         Tandem 损失函数
-        
+
         参数:
         - target_phase: 目标相位（度），形状 [batch_size, 1]
         - predicted_phase: 预测的 (L, W) 经过正向网络后的相位（度）
         - weight_smoothness: 平滑性约束的权重
-        
+
         返回:
         - 损失值（标量）
-        
+
         物理含义：
         我们想要预测的结构一旦通过正向网络，其输出相位应该等于目标相位。
         这个目标在结构空间可能有多个解，但在相位空间是唯一的。
@@ -208,19 +174,19 @@ class TandemTrainer:
         phase_loss = torch.mean(diff ** 2)
         
         return phase_loss
-    
+
     def train_with_progress(self, epochs=500, lr=0.001, batch_sizes=None,
                           val_split=0.2, verbose=True):
         """
         带进度条的 Tandem 网络训练
-        
+
         参数:
         - epochs: 训练轮数
         - lr: 学习率
         - batch_sizes: 不同阶段的批量大小列表，如 [32, 64, 128]
         - val_split: 用于验证的目标相位比例
         - verbose: 是否打印详细日志
-        
+
         返回:
         - losses: 训练损失曲线
         """
@@ -273,7 +239,9 @@ class TandemTrainer:
                 
                 # ===== 正向验证 =====
                 # 将预测的几何参数标准化，输入正向网络（保持梯度链）
-                geo_pred = torch.stack([L_pred, W_pred], dim=1)  # [batch, 2]，保持梯度
+                # 注意：正向网络输入是 (w, h, p)，但我们只预测 (L, W)，p 固定为 650 nm
+                p_fixed = torch.full_like(L_pred, 650.0)  # 固定周期 650 nm
+                geo_pred = torch.stack([L_pred, W_pred, p_fixed], dim=1)  # [batch, 3]，保持梯度
                 
                 # 使用 scaler 参数进行标准化，但保持 PyTorch 梯度链
                 scaler_mean = torch.tensor(self.scaler_X.mean_, dtype=torch.float32, device=geo_pred.device)
@@ -281,9 +249,8 @@ class TandemTrainer:
                 geo_scaled = (geo_pred - scaler_mean) / scaler_scale
                 
                 # 正向网络的参数已经冻结，所以不会被更新，但梯度可以流向逆向网络
-                pred_sin, pred_cos = self.forward_model(geo_scaled)
-                pred_phase_rad = torch.atan2(pred_sin, pred_cos)
-                pred_phase_deg = torch.rad2deg(pred_phase_rad)
+                pred_phi_scaled, _, _ = self.forward_model(geo_scaled)
+                pred_phase_deg = pred_phi_scaled * 180.0
                 
                 # ===== 计算损失 =====
                 loss = self.tandem_loss(phase_batch, pred_phase_deg)
@@ -305,14 +272,15 @@ class TandemTrainer:
                 pred_geo_norm_val = self.inverse_model(phase_targets_val)
                 L_val, W_val = self.denormalize_geometry(pred_geo_norm_val)
                 
-                geo_val_input = torch.stack([L_val, W_val], dim=1).numpy()
+                p_val_fixed = torch.full_like(L_val, 650.0)
+                geo_val_input = torch.stack([L_val, W_val, p_val_fixed], dim=1).numpy()
                 geo_val_scaled = torch.tensor(
                     self.scaler_X.transform(geo_val_input),
                     dtype=torch.float32
                 )
                 
-                pred_sin_val, pred_cos_val = self.forward_model(geo_val_scaled)
-                pred_phase_val_deg = torch.rad2deg(torch.atan2(pred_sin_val, pred_cos_val))
+                pred_phi_val_scaled, _, _ = self.forward_model(geo_val_scaled)
+                pred_phase_val_deg = pred_phi_val_scaled * 180.0
                 
                 val_loss = self.tandem_loss(phase_targets_val, pred_phase_val_deg).item()
             
@@ -338,7 +306,27 @@ class TandemTrainer:
             print("✓ Tandem 网络训练完成")
         
         return losses
-    
+
+    def denormalize_geometry(self, norm):
+        """
+        反归一化：从 [0, 1] 映射回物理范围
+        
+        参数:
+        - norm: 归一化的参数，形状 [batch_size, 2]
+        
+        返回:
+        - (L, W): 物理尺寸 (nm)
+        """
+        if isinstance(norm, np.ndarray):
+            norm = torch.tensor(norm, dtype=torch.float32)
+        
+        if norm.dim() == 1:
+            norm = norm.unsqueeze(0)
+        
+        L = norm[:, 0] * (self.L_max - self.L_min) + self.L_min
+        W = norm[:, 1] * (self.W_max - self.W_min) + self.W_min
+        return L, W
+
     def validate_inverse_design(self, test_phases=None, visualize=True):
         """
         验证逆向设计网络的性能
@@ -367,15 +355,14 @@ class TandemTrainer:
                 L_pred, W_pred = self.denormalize_geometry(pred_geo_norm)
                 
                 # 正向验证
-                geo_input = np.array([[L_pred.item(), W_pred.item()]])
+                geo_input = np.array([[L_pred.item(), W_pred.item(), 650.0]])
                 geo_scaled = torch.tensor(
                     self.scaler_X.transform(geo_input),
                     dtype=torch.float32
                 )
                 
-                pred_sin, pred_cos = self.forward_model(geo_scaled)
-                actual_phase_rad = torch.atan2(pred_sin, pred_cos).item()
-                actual_phase_deg = np.rad2deg(actual_phase_rad)
+                pred_phi_scaled, _, _ = self.forward_model(geo_scaled)
+                actual_phase_deg = (pred_phi_scaled * 180.0).item()
                 
                 error = abs(target_phase - actual_phase_deg)
                 error = min(error, 360 - error)
@@ -466,6 +453,11 @@ class TandemTrainer:
         plt.show()
 
 
+
+
+
+
+
 def main_tandem_training(forward_model=None, scaler_X=None, X=None, Y=None):
     """
     Tandem 逆向网络训练的独立测试函数
@@ -482,7 +474,7 @@ def main_tandem_training(forward_model=None, scaler_X=None, X=None, Y=None):
             X, Y = simulator.generate_dataset(n_samples=5000)
         
         Y_phase = Y[:, 1]
-        forward_model, scaler_X, _, _ = train_forward_model(X, Y_phase, epochs=300, verbose=False)
+        forward_model, history, scaler_X = train_forward_model(X, Y_phase, epochs=300, verbose=False)
     
     # 创建和训练 Tandem 网络
     tandem = TandemTrainer(forward_model, scaler_X)

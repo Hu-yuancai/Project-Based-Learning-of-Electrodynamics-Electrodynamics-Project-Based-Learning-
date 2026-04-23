@@ -37,7 +37,7 @@ try:
 except Exception:
     pass
 
-from data_generator import MetasurfaceUnitSimulator
+from data_generator import MetasurfaceDatasetGenerator
 from forward_model import train_forward_model, visualize_training, validate_forward_model
 from inverse_design import TandemTrainer
 from metasurface_design import (
@@ -89,17 +89,18 @@ class MetasurfaceDesignPipeline:
         print("[步骤 1/4] 数据集构建")
         print("-"*70)
         
-        self.simulator = MetasurfaceUnitSimulator(wavelength=700e-9, height=600e-9)
-        self.X, self.Y = self.simulator.generate_dataset(n_samples=n_samples)
-        
-        phases = self.Y[:, 1]
-        amplitudes = self.Y[:, 0]
-        
+        self.simulator = MetasurfaceDatasetGenerator(n_samples=n_samples, wavelength=1550e-9)
+        self.X, self.Y = self.simulator.generate_dataset(verbose=True)
+
+        phases = self.Y[:, 0]      # phi_deg
+        amplitudes = self.Y[:, 1]  # T (透射率)
+
         print(f"\n✓ 成功生成 {len(self.X)} 组训练数据")
-        print(f"  L 范围: [{self.X[:, 0].min():.1f}, {self.X[:, 0].max():.1f}] nm")
-        print(f"  W 范围: [{self.X[:, 1].min():.1f}, {self.X[:, 1].max():.1f}] nm")
+        print(f"  w 范围: [{self.X[:, 0].min():.3f}, {self.X[:, 0].max():.3f}] (归一化)")
+        print(f"  h 范围: [{self.X[:, 1].min():.3f}, {self.X[:, 1].max():.3f}] (归一化)")
+        print(f"  p 范围: [{self.X[:, 2].min():.3f}, {self.X[:, 2].max():.3f}] (归一化)")
         print(f"  相位范围: [{phases.min():.1f}°, {phases.max():.1f}°]")
-        print(f"  振幅范围: [{amplitudes.min():.3f}, {amplitudes.max():.3f}]")
+        print(f"  透射率范围: [{amplitudes.min():.3f}, {amplitudes.max():.3f}]")
         
         # 保存数据集
         dataset_path = os.path.join(self.output_dir, 'dataset.npz')
@@ -107,9 +108,8 @@ class MetasurfaceDesignPipeline:
         print(f"  数据已保存到: {dataset_path}")
         
         # 可视化数据集
-        self._save_figure('dataset_visualization.png')
-        self.simulator.visualize_dataset(self.X, self.Y)
-        self._save_figure('dataset_visualization.png')
+        dataset_vis_path = os.path.join(self.output_dir, 'dataset_visualization.png')
+        self.simulator.visualize_dataset(save_path=dataset_vis_path)
     
     def step2_train_forward_model(self, epochs=300):
         """
@@ -122,15 +122,15 @@ class MetasurfaceDesignPipeline:
         if self.X is None or self.Y is None:
             raise ValueError("请先运行 step1_generate_dataset()")
         
-        Y_phase = self.Y[:, 1]
-        
-        self.forward_model, self.scaler_X, train_losses, val_losses = train_forward_model(
+        Y_phase = self.Y[:, 0]  # phi_deg (index 0)
+
+        self.forward_model, history, self.scaler_X = train_forward_model(
             self.X, Y_phase, epochs=epochs, batch_size=128, verbose=True
         )
-        
+
         # 可视化训练曲线
         print("\n绘制训练曲线...")
-        visualize_training(train_losses, val_losses)
+        visualize_training(self.forward_model, self.scaler_X, history=history)
         self._save_figure('forward_training.png')
         
         # 验证模型性能
@@ -155,14 +155,16 @@ class MetasurfaceDesignPipeline:
             raise ValueError("请先运行 step2_train_forward_model()")
         
         self.tandem = TandemTrainer(self.forward_model, self.scaler_X)
-        losses = self.tandem.train_with_progress(epochs=epochs, lr=0.001, verbose=True)
-        
+        history = self.tandem.train_with_progress(
+            epochs=epochs, lr=0.001, verbose=True
+        )
+
         self.inverse_model = self.tandem.inverse_model
-        
+
         # 可视化训练曲线
         print("\n绘制 Tandem 训练曲线...")
         fig, ax = plt.subplots(figsize=(10, 6))
-        ax.plot(losses, 'b-', linewidth=2)
+        ax.plot(history, 'b-', linewidth=2)
         ax.set_xlabel('Epoch', fontsize=12)
         ax.set_ylabel('Loss', fontsize=12)
         ax.set_title('Tandem 网络训练曲线', fontsize=14)
@@ -171,10 +173,12 @@ class MetasurfaceDesignPipeline:
         plt.tight_layout()
         self._save_figure('tandem_training.png')
         plt.close(fig)
-        
+
         # 验证逆向网络
         print("\n验证逆向网络性能...")
-        validation_results = self.tandem.validate_inverse_design(visualize=True)
+        import torch
+        test_targets = torch.tensor([[0.0, 0.8, 0.15], [90.0, 0.7, 0.2]], dtype=torch.float32)
+        self.tandem.validate_inverse_design(test_targets)
         self._save_figure('tandem_validation.png')
         
         # 保存模型
