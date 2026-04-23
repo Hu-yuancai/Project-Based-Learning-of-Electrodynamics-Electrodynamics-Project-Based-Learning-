@@ -27,14 +27,14 @@ from pathlib import Path
 try:
     if Path('C:/Windows/Fonts/simhei.ttf').exists():
         matplotlib.font_manager.fontManager.addfont('C:/Windows/Fonts/simhei.ttf')
-        plt.rcParams['font.sans-serif'] = ['SimHei']
+        matplotlib.rcParams['font.sans-serif'] = ['SimHei', 'DejaVu Sans']
     else:
-        plt.rcParams['font.sans-serif'] = ['SimHei', 'DejaVu Sans']
-    plt.rcParams['axes.unicode_minus'] = False
+        matplotlib.rcParams['font.sans-serif'] = ['DejaVu Sans']
+    matplotlib.rcParams['axes.unicode_minus'] = False
 except Exception:
     pass
 
-from data_generator import MetasurfaceUnitSimulator
+from data_generator import RigorousMetasurfaceSimulator
 from forward_model import train_forward_model, validate_forward_model
 from inverse_design import TandemTrainer
 from metasurface_design import (
@@ -58,7 +58,7 @@ def quick_demo():
     
     # ===== 步骤 1：生成数据 =====
     print("\n[1/4] 生成数据集 (1000 样本)...")
-    simulator = MetasurfaceUnitSimulator(wavelength=700e-9)
+    simulator = RigorousMetasurfaceSimulator(wavelength=1550e-9)
     X, Y = simulator.generate_dataset(n_samples=1000)
     Y_phase = Y[:, 1]
     print(f"✓ 生成 {len(X)} 组数据")
@@ -114,8 +114,8 @@ def quick_demo():
         inverse_model=tandem.inverse_model,
         scaler_X=scaler_X,
         forward_model=forward_model,
-        wavelength=700e-9,
-        period=350e-9,
+        wavelength=1550e-9,
+        period=600e-9,
         target_angle_deg=30,
         n_elements=21
     )

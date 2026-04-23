@@ -1,291 +1,140 @@
 # 项目总览
 
 ## 项目名称
-**基于深度学习的超构表面逆向设计系统**
-*Metasurface Inverse Design via Deep Learning*
+
+基于深度学习的超构表面逆向设计系统（λ = 1550 nm）
 
 ## 核心创新
 
 ### Tandem Network 架构
-解决了传统逆向网络的"非唯一映射"问题，通过在物理响应空间（相位）而非几何空间定义损失函数，超越了结构预测的歧义性。
+
+解决传统逆向网络的"非唯一映射"问题，通过在物理响应空间（相位）而非几何空间定义损失函数：
 
 ```
-物理约束    几何参数    电磁响应
-   ↓          ↓         ↓
-目标相位 → 逆向网络 → (L,W) → 正向网络 → 预测相位
-                                 ↓
-                            Loss = Δ相位
+目标相位 → [逆向网络] → 预测(w,p) → [冻结的正向网络] → 预测相位
+                                                              ↓
+                                              HuberLoss(预测相位, 目标相位)
 ```
-
-## 文件清单和说明
-
-### 📚 核心程序模块
-
-| 文件 | 行数 | 功能 | 关键类/函数 |
-|:---|:---|:---|:---|
-| **main.py** | 400 | 主程序和完整流程管理 | `MetasurfaceDesignPipeline` |
-| **data_generator.py** | 250 | 超构表面单元的代理模拟器 | `MetasurfaceUnitSimulator` |
-| **forward_model.py** | 350 | 正向网络训练：结构→相位 | `ForwardPredictor` |
-| **inverse_design.py** | 500 | Tandem 逆向网络训练 | `TandemTrainer`, `InverseDesigner` |
-| **metasurface_design.py** | 450 | 阵列设计和可视化 | `design_anomalous_refraction_array()` |
-
-### 🚀 快速启动脚本
-
-| 文件 | 用途 | 运行时间 |
-|:---|:---|:---|
-| **main.py** | 完整流程（默认参数） | 10-15 分钟 (GPU) |
-| **quick_demo.py** | 快速演示（缩小参数） | 3-5 分钟 (GPU) |
-| **verify.py** | 环境检查和诊断 | <1 分钟 |
-
-### 📖 文档
-
-| 文件 | 内容 | 读者 |
-|:---|:---|:---|
-| **README.md** | 完整技术文档和原理说明 | 想理解项目 |
-| **USAGE.md** | 使用指南和快速参考 | 想运行项目 |
-| **INDEX.md** | 本文件，项目总览 | 想全面了解 |
-
-### 🔧 配置和环境
-
-| 文件 | 用途 |
-|:---|:---|
-| **requirements.txt** | Python 依赖包列表 |
-| **.gitignore** | Git 忽略规则 |
 
 ---
 
-## 快速开始
+## 文件清单
 
-### 最快方式（3-5 分钟）
-```bash
-python verify.py       # 检查环境
-python quick_demo.py   # 快速演示
-```
+### 核心代码模块
 
-### 标准方式（10-15 分钟）
-```bash
-python verify.py       # 检查环境
-python main.py         # 完整流程
-```
+| 文件 | 功能 | 关键类/函数 |
+|:---|:---|:---|
+| `main.py` | 主程序，4 步骤流程编排 | `MetasurfaceDesignPipeline` |
+| `data_generator.py` | Rytov + FP 物理模型，数据集生成 | `RigorousMetasurfaceSimulator` |
+| `forward_model.py` | 正向网络：$(w,p) \to (\sin\phi, \cos\phi)$ | `ForwardPredictor`, `train_forward_model` |
+| `inverse_design.py` | Tandem 逆向网络训练 | `TandemTrainer`, `InverseDesigner` |
+| `metasurface_design.py` | 阵列设计与可视化 | `design_anomalous_refraction_array` |
 
-### 完整方式（包含自定义）
-参考 `USAGE.md` 中的"修改参数"部分
+### 脚本与测试
+
+| 文件 | 用途 | 运行时间 |
+|:---|:---|:---|
+| `quick_demo.py` | 快速演示（需更新至新 API） | 5–10 分钟 |
+| `verify.py` | 环境检查 | <1 分钟 |
+| `smoke_test.py` | 端到端冒烟测试 | ~2 分钟 |
+
+### 文档
+
+| 文件 | 内容 |
+|:---|:---|
+| `README.md` | 物理原理、网络架构、实验结果、参考文献 |
+| `USAGE.md` | 运行方式、参数配置、结果解读、故障排除 |
+| `INDEX.md` | 本文件，项目总览 |
 
 ---
 
 ## 项目架构
 
 ```
-数据生成层 (data_generator.py)
-    ↓
-    → 生成 5000 组 [L, W] → [Phase, Amplitude]
-    → 基于有效折射率理论和经验模型
-
-正向网络层 (forward_model.py)
-    ↓
-    → 训练 MLP 网络：(L, W) → Phase
-    → 输出采用 sin/cos 编码处理周期性
-    → 300 epochs 收敛
-
-逆向网络层 (inverse_design.py)
-    ↓
-    → 核心创新：Tandem 架构
-    → 正向网络冻结，逆向网络学习 Phase → (L, W)
-    → Loss 定义在相位空间，绕过非唯一性
-    → 500 epochs 收敛
-
-应用层 (metasurface_design.py)
-    ↓
-    → 设计 21 元素超构表面阵列
-    → 实现 30° 反常折射
-    → 完整可视化和性能评估
+数据生成（data_generator.py）
+  Rytov 二阶近似有效折射率 + Fabry-Perot 透射系数
+  拉丁超立方采样，5000 样本
+  输出：X=[w_nm, p_nm]，Y=[T, phi_deg]
+        ↓
+正向网络（forward_model.py）
+  输入：StandardScaler 归一化的 (w, p)
+  输出：(sin φ, cos φ)，单位圆归一化
+  损失：sin/cos MSE + 角度惩罚 + 单位模约束
+        ↓
+Tandem 逆向网络（inverse_design.py）
+  输入：归一化目标相位 φ/180
+  输出：归一化几何参数，Sigmoid 约束
+  训练：正向网络冻结，Huber Loss 在相位空间
+        ↓
+阵列设计（metasurface_design.py）
+  广义斯涅尔定律计算理想相位梯度
+  逆向网络为每个单元设计 (w, p)
+  正向网络验证，计算等效折射角
 ```
 
 ---
 
-## 关键物理洞察
+## 物理参数
 
-### 1. 广义斯涅尔定律
-$$n_t \sin\theta_t - n_i \sin\theta_i = \frac{\lambda_0}{2\pi} \frac{d\Phi}{dx}$$
-
-通过设计相位梯度 $\frac{d\Phi}{dx}$，超构表面可以控制光的传播方向。
-
-### 2. 有效折射率模型
-$$n_{eff} = n_{clad} + (n_{core} - n_{clad})(1 - e^{-V/2})$$
-
-其中 V 是标准化的结构参数，描述了纳米柱尺寸与相位的关系。
-
-### 3. AI 避坑案例
-
-#### 案例 A：相位的拓扑性
-- **问题**：179° 和 -179° 直接 MSE 损失会导致梯度混乱
-- **解决**：用 sin/cos 双通道编码，保留周期拓扑
-- **启示**：物理对称性要在架构中编码
-
-#### 案例 B：非唯一映射
-- **问题**：多个结构对应同一相位，直接训练学不到正确映射
-- **解决**：Tandem 架构，Loss 定义在响应空间
-- **启示**：约束所有的物理响应，而非精确的结构参数
-
----
-
-## 预期运行结果
-
-### 关键指标（完整版本）
-
-| 指标 | 目标值 | 预期结果 |
+| 参数 | 符号 | 取值 |
 |:---|:---|:---|
-| 正向网络相位误差 | < 5° | 3-4° |
-| Tandem 验证误差 | < 5° | 2-3° |
-| 设计平均误差 | < 10° | 5-8° |
-| 实现折射角 vs 目标 | 30° ± 2° | 30° ± 1° |
-| 网络推理时间 | < 10ms | 2-3ms |
-
-### 关键视图（在 results/ 中）
-
-1. **metasurface_design_results.png** (最重要)
-   - 相位分布对比
-   - 设计误差分析
-   - 几何参数分布
-   - 阵列结构示意
-
-2. **metasurface_parameters.png**
-   - L 与相位的关系
-   - W 与相位的关系
-   - (L,W) 参数空间
-   - 尺寸统计分布
-
-3. **tandem_validation.png**
-   - 目标 vs 实现相位
-   - 误差分布
-   - 典型设计点展示
+| 工作波长 | λ | 1550 nm |
+| 硅折射率 | $n_{Si}$ | 3.4777 |
+| SiO₂ 折射率 | $n_{sub}$ | 1.444 |
+| 纳米柱宽度 | $w$ | 80–500 nm |
+| 单元周期 | $p$ | 400–1073 nm |
+| 纳米柱高度 | $H$ | 900 nm（固定） |
 
 ---
 
-## 适用学科
+## 实验结果（v2.0）
 
-✓ 电磁学 / 电动力学  
-✓ 光学与光子学  
-✓ 机器学习  
-✓ 神经网络  
-✓ 逆向工程问题  
-✓ 数值计算方法  
+| 模块 | 指标 | 数值 |
+|:---|:---|:---|
+| 数据集 | 透射率均值 | 0.65 |
+| 数据集 | 相位范围 | [-180°, 180°] |
+| 正向网络 | 相位 MAE | 1.04° |
+| 正向网络 | 最大误差 | 9.32° |
+| Tandem 网络 | 平均误差 | 1.72° |
+| Tandem 网络 | 最大误差 | 5.80° |
+| 阵列设计 | 平均相位误差 | 1.44° |
+| 阵列设计 | 折射角偏差 | 0.0°（目标 30°） |
 
 ---
 
-## AI 与物理的融合
+## 关键设计决策
 
-这个项目展示了深度学习在物理问题中的应用的三个层次：
+### sin/cos 双通道相位编码
 
-### Level 1：黑盒逼近
-神经网络作为函数逼近器，学习电磁仿真的替代模型。优点是快速（毫秒级），缺点是可能出现幻觉。
+直接回归相位角度在 ±180° 处产生 360° 虚假误差。改用 $(\sin\phi, \cos\phi)$ 双通道，输出层归一化至单位圆，彻底解决周期性跳变。
 
-### Level 2：物理约束编码
-在网络架构中嵌入物理对称性（sin/cos 编码、能量守恒约束等），使网络对物理问题的学习更有效。
+### Tandem 架构解决非唯一性
 
-### Level 3：物理响应空间约束
-通过 Tandem 架构，将损失函数定义在物理响应空间而非参数空间，利用物理約束来消除歧义。
+同一目标相位可对应多个几何结构。直接训练"相位→结构"时，网络输出多解的平均值，该平均结构通常无法实现目标相位。Tandem 架构将 Loss 定义在相位响应空间，网络自动找到任意一个物理可行解。
 
-**核心启示**：最佳的 AI×物理 结合不是"AI 取代物理模拟"，而是"物理知识指导 AI 学习"。
+### Huber Loss 提升鲁棒性
+
+相位空间中存在少量离群点（相位跳变边界附近）。Huber Loss 对小误差（<10°）用二次惩罚，对大误差用线性惩罚，比纯 MSE 更鲁棒。
 
 ---
 
 ## 如何扩展
 
-### 1. 改进物理模型
-- 将简单的有效折射率替换为更复杂的模型
-- 添加偏振态的处理（线偏振 → 圆偏振 → 椭圆偏振）
-- 考虑频率色散效应
-
-### 2. 增强神经网络
-- 尝试更深的网络或不同的架构（ResNet, Transformer）
-- 添加物理约束的正则化项
-- 使用更高级的优化算法
-
-### 3. 扩展应用
-- 设计其他功能：焦点透镜、轨道角动量（OAM）发生器
-- 多波长反常折射（彩色超构表面）
-- 动态超构表面（用相变材料）
-
-### 4. 连接真实仿真
-- 用 COMSOL、FDTD 生成更准确的训练数据
-- 进行 sim-to-real 迁移学习
-- 与流片工艺集成
+- 改变目标折射角：修改 `main.py` 中 `config['target_angle']`
+- 改变阵列规模：修改 `config['n_elements']`
+- 多折射角批量设计：循环调用 `design_anomalous_refraction_array()`
+- 更高精度：增加 `n_samples`、`forward_epochs`、`tandem_epochs`
 
 ---
 
-## 故障排除快速指南
+## 参考文献
 
-| 问题 | 症状 | 解决方案 |
-|:---|:---|:---|
-| 环境问题 | ImportError | 运行 `python verify.py` |
-| GPU 不可用 | 运行很慢 | 检查 `torch.cuda.is_available()` |
-| 内存不足 | OOM 错误 | 减少 batch_size 或 n_samples |
-| 模型不收敛 | Loss 不下降 | 调整学习率或增加数据 |
-| 预测很差 | 误差 > 20° | 增加 epochs 或检查数据质量 |
+[1] YU N, CAPASSO F. Flat optics with designer metasurfaces[J/OL]. Nature Materials, 2014, 13(2): 139-150. DOI:10.1038/nmat3839.
 
-详见 `USAGE.md` 的"常见问题"部分。
+[2] DONG Y, AN S, JIANG H, 等. Advanced deep learning approaches in metasurface modeling and design: A review[J/OL]. Progress in Quantum Electronics, 2025, 99: 100554. DOI:10.1016/j.pquantelec.2025.100554.
 
----
+[3] PEURIFOY J, SHEN Y, JING L, 等. Nanophotonic particle simulation and inverse design using artificial neural networks[J/OL]. Science Advances, 2018, 4(6): eaar4206. DOI:10.1126/sciadv.aar4206.
 
-## 论文和资源
+[4] MA W, CHENG F, LIU Y. Deep-Learning-Enabled On-Demand Design of Chiral Metamaterials[J/OL]. ACS Nano, 2018, 12(6): 6326-6334. DOI:10.1021/acsnano.8b03569.
 
-### 物理基础
-- Pendry, J. B., et al. "Controlling electromagnetic fields with metamaterials." *Science* **312.5781** (2006): 1780-1782.
-- Yu, N., & Capasso, F. "Flat optics with designer metasurfaces." *Nature Materials* **13.2** (2014): 139-150.
-
-### 深度学习应用
-- Raissi, M., Perdikaris, P., & Karniadakis, G. E. "Physics-informed neural networks." *SIAM Review* **65.3** (2023): 681-715.
-- Barbier, S., et al. "Machine learning for the geosciences." *Nature Reviews Earth & Environment* **3.2** (2022): 89-107.
-
-### 代码参考
-- PyTorch 官方教程：https://pytorch.org/tutorials/
-- scikit-learn 文档：https://scikit-learn.org/
-- Matplotlib 实战指南：https://matplotlib.org/tutorials/index.html
-
----
-
-## 项目统计
-
-| 指标 | 数值 |
-|:---|:---|
-| 代码文件数 | 5 |
-| 总代码行数 | ~2000 |
-| 文档行数 | ~1500 |
-| 注释密度 | ~30% |
-| 神经网络参数 | ~100K (forward) + ~250K (inverse) |
-| 训练样本数 | 5000 |
-| 总训练时间 (GPU) | ~3 分钟 |
-
----
-
-## 项目完成度
-
-- [x] 数据生成模块
-- [x] 正向网络训练
-- [x] Tandem 逆向设计
-- [x] 超构表面阵列设计
-- [x] 完整可视化
-- [x] 快速演示脚本
-- [x] 环境检查脚本
-- [x] 完整文档
-- [x] AI 避坑案例记录
-- [x] 性能基准测试
-
----
-
-## 下一步
-
-1. **立即**：运行 `python verify.py` 检查环境
-2. **快速体验**：运行 `python quick_demo.py`（3-5 分钟）
-3. **完整项目**：运行 `python main.py`（10-15 分钟）
-4. **深入理解**：阅读 `README.md` 和代码注释
-5. **自定义扩展**：参考 USAGE.md 修改参数或扩展功能
-
----
-
-**项目版本**：1.0  
-**最后更新**：2026 年 4 月  
-**状态**：✅ 完全可用  
-
-👉 **开始吧！** `python main.py`
+[5] JIANG J, SELL D, HOYER S, 等. Free-Form Diffractive Metagrating Design Based on Generative Adversarial Networks[J/OL]. ACS Nano, 2019, 13(8): 8872-8878. DOI:10.1021/acsnano.9b02371.
