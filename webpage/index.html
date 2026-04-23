@@ -1,0 +1,571 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>基于深度学习的超构表面逆向设计</title>
+  <link rel="stylesheet" href="styles.css" />
+  <!-- MathJax -->
+  <script>
+    window.MathJax = {
+      tex: { inlineMath: [['$','$'],['\\(','\\)']], displayMath: [['$$','$$'],['\\[','\\]']] },
+      options: { skipHtmlTags: ['script','noscript','style','textarea','pre'] }
+    };
+  </script>
+  <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js" async></script>
+</head>
+<body>
+
+<!-- ===== SIDE NAV ===== -->
+<nav class="side-nav" id="sideNav">
+  <div class="nav-indicator"></div>
+  <ul>
+    <li><a href="#cover" data-section="0">封面</a></li>
+    <li><a href="#toc" data-section="1">目录</a></li>
+    <li><a href="#ch1" data-section="2">第一章</a></li>
+    <li><a href="#ch2" data-section="3">第二章</a></li>
+    <li><a href="#ch3" data-section="4">第三章</a></li>
+    <li><a href="#ch4" data-section="5">第四章</a></li>
+    <li><a href="#ch5" data-section="6">第五章</a></li>
+    <li><a href="#ch6" data-section="7">第六章</a></li>
+    <li><a href="#refs" data-section="8">参考文献</a></li>
+  </ul>
+</nav>
+
+<!-- ===== LIGHTBOX ===== -->
+<div class="lightbox" id="lightbox">
+  <button class="lightbox-close" id="lightboxClose">&#x2715;</button>
+  <img id="lightboxImg" src="" alt="" />
+  <p class="lightbox-caption" id="lightboxCaption"></p>
+</div>
+
+<!-- ===== COVER ===== -->
+<section class="page" id="cover">
+  <div class="cover-bg"></div>
+  <div class="cover-content animate-in">
+    <div class="cover-badge">电动力学项目化学习</div>
+    <h1 class="cover-title">基于深度学习的超构表面单元<br/>逆向设计及反常折射物理模型</h1>
+    <div class="cover-meta">
+      <span>课程：电动力学项目化学习</span>
+      <span class="sep">|</span>
+      <span>展示人：项目组</span>
+      <span class="sep">|</span>
+      <span>2026 年</span>
+    </div>
+    <a class="cover-link" href="https://github.com/Hu-yuancai/Project-Based-Learning-of-Electrodynamics-Electrodynamics-Project-Based-Learning-/tree/v2" target="_blank">
+      &#x1F517; 项目开源地址 GitHub
+    </a>
+    <div class="cover-highlight">
+      <div class="highlight-item">
+        <span class="hl-num" data-target="30.0">0</span><span class="hl-unit">°</span>
+        <p>完美反常折射</p>
+      </div>
+      <div class="highlight-item">
+        <span class="hl-num" data-target="0.0">0</span><span class="hl-unit">°</span>
+        <p>折射角偏差</p>
+      </div>
+      <div class="highlight-item">
+        <span class="hl-num" data-target="1.44">0</span><span class="hl-unit">°</span>
+        <p>阵列平均相位误差</p>
+      </div>
+      <div class="highlight-item">
+        <span class="hl-num" data-target="1.04">0</span><span class="hl-unit">°</span>
+        <p>正向网络 MAE</p>
+      </div>
+    </div>
+    <div class="cover-wave"></div>
+  </div>
+</section>
+
+<!-- ===== TOC ===== -->
+<section class="page page-light" id="toc">
+  <div class="page-inner animate-in">
+    <h2 class="section-title">目录</h2>
+    <div class="toc-grid">
+      <a class="toc-card" href="#ch1">
+        <span class="toc-num">01</span>
+        <div><strong>研究背景与文献调研</strong><p>科学问题 · 研究现状 · 参数选择依据</p></div>
+      </a>
+      <a class="toc-card" href="#ch2">
+        <span class="toc-num">02</span>
+        <div><strong>物理原理与电磁建模</strong><p>广义斯涅尔定律 · FP模型 · 物理约束</p></div>
+      </a>
+      <a class="toc-card" href="#ch3">
+        <span class="toc-num">03</span>
+        <div><strong>深度学习算法框架</strong><p>Tandem架构 · 正向网络 · 逆向训练</p></div>
+      </a>
+      <a class="toc-card" href="#ch4">
+        <span class="toc-num">04</span>
+        <div><strong>实验结果与性能分析</strong><p>数据集 · 正向/逆向精度 · 阵列设计</p></div>
+      </a>
+      <a class="toc-card" href="#ch5">
+        <span class="toc-num">05</span>
+        <div><strong>AI工具使用全记录</strong><p>工具清单 · 6大纠错案例 · 经验总结</p></div>
+      </a>
+      <a class="toc-card" href="#ch6">
+        <span class="toc-num">06</span>
+        <div><strong>结论与展望</strong><p>研究结论 · 未来方向</p></div>
+      </a>
+      <a class="toc-card" href="#refs">
+        <span class="toc-num">07</span>
+        <div><strong>参考文献</strong><p>9 篇核心文献</p></div>
+      </a>
+    </div>
+  </div>
+</section>
+
+<!-- ===== CH1 ===== -->
+<section class="page" id="ch1">
+  <div class="page-inner animate-in">
+    <div class="chapter-label">第一章</div>
+    <h2 class="section-title">研究背景与文献调研</h2>
+
+    <div class="content-block">
+      <h3>1.1 研究背景与科学问题</h3>
+      <p>超构表面是由亚波长人工结构单元构成的二维电磁调控器件，能够在纳米尺度下对电磁波的相位、振幅、偏振态进行精准调控，突破了传统光学器件受材料本征折射率限制的瓶颈，是平面光学、集成光子学领域的核心研究方向。</p>
+      <p>传统超构表面设计依赖 FDTD/RCWA 全波仿真与反复参数扫描，设计周期长达数小时甚至数天，且难以高效求解<strong>从目标电磁响应到结构参数的高维非线性逆问题</strong>。近年来，深度学习为这一难题提供了全新的解决路径，可将设计时间压缩至毫秒级。</p>
+    </div>
+
+    <div class="content-block">
+      <h3>1.2 国内外研究现状</h3>
+      <div class="timeline">
+        <div class="tl-item">
+          <div class="tl-year">2011</div>
+          <div class="tl-body">Yu 与 Capasso 在《Science》首次系统提出<strong>广义斯涅尔定律</strong>，奠定了平面光学的理论基础，证明了相位梯度可实现任意电磁波前调控。</div>
+        </div>
+        <div class="tl-item">
+          <div class="tl-year">2018</div>
+          <div class="tl-body">Peurifoy 等人在《Science Advances》提出 <strong>Tandem 串联神经网络架构</strong>，解决了超构表面逆设计固有的非唯一性问题；同年 Malkiel 等人在《Light: Science &amp; Applications》验证了深度学习在纳米光子结构设计中的有效性。</div>
+        </div>
+        <div class="tl-item">
+          <div class="tl-year">2025</div>
+          <div class="tl-body">最新综述（Progress in Quantum Electronics）指出，现有方法仍存在<strong>物理约束缺失、逆问题多解性处理不足</strong>的核心痛点，构建物理驱动的深度学习框架是领域核心发展方向。</div>
+        </div>
+      </div>
+      <div class="img-wrap">
+        <img src="../图片/文献调研.png" alt="文献调研" class="result-img" data-caption="国内外研究现状与文献调研" />
+        <p class="img-caption">图 1.1 国内外研究现状与文献调研</p>
+      </div>
+    </div>
+
+    <div class="two-col">
+      <div class="content-block">
+        <h3>1.3 工作波段：1550 nm 光通信 C 波段</h3>
+        <ul class="bullet-list">
+          <li><strong>物理依据：</strong>光纤通信系统标准低损耗窗口，传输损耗仅 0.2 dB/km</li>
+          <li><strong>材料依据：</strong>Si/SiO₂ 在该波段吸收损耗极低，与 CMOS 工艺完全兼容</li>
+          <li><strong>应用价值：</strong>覆盖芯片间光互连、光纤耦合、激光雷达波束扫描等核心工程场景</li>
+        </ul>
+      </div>
+      <div class="content-block">
+        <h3>目标折射角：30° 反常折射</h3>
+        <ul class="bullet-list">
+          <li><strong>物理可行性：</strong>600 nm 单元周期下相邻单元相位差约 70°，远低于奈奎斯特采样 180° 上限</li>
+          <li><strong>文献共识：</strong>30° 是超构表面逆向设计领域的通用标准测试角度</li>
+          <li><strong>工程代表性：</strong>覆盖光互连器件 15°–40° 的典型波束偏折需求</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="content-block">
+      <h3>1.4 研究目标与核心内容</h3>
+      <div class="step-flow">
+        <div class="step-item"><span class="step-num">①</span><p>基于等效介质理论与 Fabry–Pérot 模型，生成物理自洽的监督数据集</p></div>
+        <div class="step-arrow">→</div>
+        <div class="step-item"><span class="step-num">②</span><p>训练正向神经网络作为电磁仿真的快速可微代理模型</p></div>
+        <div class="step-arrow">→</div>
+        <div class="step-item"><span class="step-num">③</span><p>采用 Tandem 串联架构，将正向物理模型作为内生约束嵌入逆向训练</p></div>
+        <div class="step-arrow">→</div>
+        <div class="step-item"><span class="step-num">④</span><p>设计 21 单元一维超构表面阵列，实现 30° 反常折射，完成全流程验证</p></div>
+      </div>
+      <div class="img-wrap" style="margin-top:24px;">
+        <img src="../图片/我们的工作.png" alt="我们的工作" class="result-img" data-caption="本研究工作总览：从物理建模到深度学习逆向设计的完整框架" />
+        <p class="img-caption">图 1.2 本研究工作总览</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ===== CH2 ===== -->
+<section class="page page-light" id="ch2">
+  <div class="page-inner animate-in">
+    <div class="chapter-label">第二章</div>
+    <h2 class="section-title">物理原理与电磁建模</h2>
+
+    <div class="two-col">
+      <div class="content-block">
+        <h3>2.1 广义斯涅尔定律</h3>
+        <p>传统斯涅尔定律源于界面切向波矢连续，本质是光子横向动量守恒。若在界面引入空间相位分布 $\Phi(x)$，可得广义形式：</p>
+        <div class="formula-box">
+          $$n_2 \sin\theta_2 - n_1 \sin\theta_1 = \frac{\lambda}{2\pi} \frac{d\Phi}{dx}$$
+        </div>
+        <p>本研究采用正入射条件（$\theta_1=0°$），简化为：</p>
+        <div class="formula-box">
+          $$n_2 \sin\theta_2 = \frac{\lambda}{2\pi} \frac{d\Phi}{dx}$$
+        </div>
+        <p>由此计算，实现 30° 反常折射所需相邻单元相位差约为 <strong>70°</strong>。</p>
+      </div>
+      <div class="content-block">
+        <h3>2.2 单元构型与物理参数</h3>
+        <table class="data-table">
+          <thead><tr><th>参数</th><th>符号</th><th>取值/范围</th></tr></thead>
+          <tbody>
+            <tr><td>工作波长</td><td>$\lambda_0$</td><td>1550 nm</td></tr>
+            <tr><td>硅折射率</td><td>$n_{Si}$</td><td>3.4777</td></tr>
+            <tr><td>SiO₂折射率</td><td>$n_{sub}$</td><td>1.444</td></tr>
+            <tr><td>纳米柱宽度</td><td>$w$</td><td>80–500 nm</td></tr>
+            <tr><td>单元周期</td><td>$p$</td><td>400–1073 nm</td></tr>
+            <tr><td>纳米柱高度</td><td>$H$</td><td>900 nm（固定）</td></tr>
+            <tr><td>透射相位</td><td>$\phi$</td><td>[-180°, 180°]</td></tr>
+            <tr><td>透射率</td><td>$T$</td><td>[0, 1]</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="content-block">
+      <h3>2.3 电磁响应建模：Rytov 二阶近似 + Fabry–Pérot 模型</h3>
+      <div class="model-steps">
+        <div class="model-step">
+          <div class="ms-num">1</div>
+          <div class="ms-body">
+            <strong>有效折射率（Rytov 二阶近似，TE 偏振）</strong>
+            <div class="formula-box">
+              $$n^2_{eff}(f) = f n^2_{Si} + (1-f) n^2_{air} + \frac{(n^2_{Si} - n^2_{air})^2}{3} f^2(1-f)^2 (k_0 p)^2$$
+            </div>
+            <p>其中 $f=w/p$ 为填充因子，末项为二阶色散修正，反映周期结构对有效折射率的影响。</p>
+          </div>
+        </div>
+        <div class="model-step">
+          <div class="ms-num">2</div>
+          <div class="ms-body">
+            <strong>传播相位积累</strong>
+            <div class="formula-box">
+              $$\Phi_{prop} = \frac{2\pi}{\lambda_0} n_{eff} H$$
+            </div>
+          </div>
+        </div>
+        <div class="model-step">
+          <div class="ms-num">3</div>
+          <div class="ms-body">
+            <strong>Fabry–Pérot 复透射系数</strong>
+            <div class="formula-box">
+              $$t = \frac{(1-r_1)(1-r_2)\, e^{i\Phi_{prop}}}{1 - r_1 r_2\, e^{2i\Phi_{prop}}}$$
+            </div>
+            <p>$r_1, r_2$ 分别为空气/等效介质、等效介质/基底的菲涅耳反射系数。</p>
+          </div>
+        </div>
+        <div class="model-step">
+          <div class="ms-num">4</div>
+          <div class="ms-body">
+            <strong>电磁响应提取</strong>
+            <p>透射率 $T=|t|^2$，透射相位 $\phi=\arg(t)$（转换为 [-180°, 180°] 角度制）。引入模式耦合效率与散射损耗的唯象修正，使透射率均值约为 0.65，与全介质超构表面实验值吻合。</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="content-block">
+      <h3>2.4 物理约束与数据筛选</h3>
+      <div class="constraint-grid">
+        <div class="constraint-item"><span class="ci-icon">①</span><strong>亚波长条件</strong><p>$p &lt; \lambda_0$，确保有效介质近似成立</p></div>
+        <div class="constraint-item"><span class="ci-icon">②</span><strong>高阶衍射抑制</strong><p>$p &lt; \lambda_0/n_{sub} \approx 1073\,\text{nm}$，消除基底寄生衍射级</p></div>
+        <div class="constraint-item"><span class="ci-icon">③</span><strong>基模传输条件</strong><p>$w \geq 80\,\text{nm}$，保证波导模式不截止</p></div>
+        <div class="constraint-item"><span class="ci-icon">④</span><strong>填充因子约束</strong><p>$0.1 \leq w/p \leq 0.8$，符合光刻工艺制造可行性</p></div>
+      </div>
+      <p class="note-text">采用拉丁超立方采样（LHS）生成 5000 个候选点，经筛选保留 <strong>4552 个有效样本</strong>（有效率 91.0%）。</p>
+    </div>
+  </div>
+</section>
+
+<!-- ===== CH3 ===== -->
+<section class="page" id="ch3">
+  <div class="page-inner animate-in">
+    <div class="chapter-label">第三章</div>
+    <h2 class="section-title">深度学习算法框架</h2>
+
+    <div class="content-block">
+      <h3>3.1 整体架构：Tandem 串联神经网络</h3>
+      <p>超构表面逆设计本质是<strong>病态非唯一映射问题</strong>：一个目标相位可对应多个几何结构，直接监督学习会导致网络输出趋于多解平均，产生非物理解。</p>
+      <div class="arch-diagram">
+        <div class="arch-box input-box">$\phi_{target}$<br/><small>目标相位</small></div>
+        <div class="arch-arrow">→</div>
+        <div class="arch-box inv-box">逆向网络 $g(\cdot)$<br/><small>待训练</small></div>
+        <div class="arch-arrow">→</div>
+        <div class="arch-box param-box">$(w, p)$<br/><small>几何参数</small></div>
+        <div class="arch-arrow">→</div>
+        <div class="arch-box fwd-box">正向网络 $f(\cdot)$<br/><small>冻结</small></div>
+        <div class="arch-arrow">→</div>
+        <div class="arch-box output-box">$\hat{\phi}$<br/><small>预测相位</small></div>
+        <div class="arch-loss">
+          <div class="loss-arrow">↓</div>
+          <div class="loss-box">$\mathcal{L}(\hat{\phi},\, \phi_{target})$<br/><small>Huber Loss</small></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="two-col">
+      <div class="content-block">
+        <h3>3.2 正向网络：物理代理模型</h3>
+        <div class="net-spec">
+          <div class="ns-row"><span class="ns-label">输入</span><span>2 维归一化 $(w, p)$</span></div>
+          <div class="ns-row"><span class="ns-label">隐藏层</span><span>[256, 512, 512, 256, 128]<br/>LeakyReLU(0.1) + BN + Dropout(0.05)</span></div>
+          <div class="ns-row"><span class="ns-label">输出</span><span>$(\sin\phi, \cos\phi)$，归一化至单位圆</span></div>
+          <div class="ns-row"><span class="ns-label">优化器</span><span>Adam(lr=2e-3)，早停耐心 100 轮</span></div>
+        </div>
+        <p class="note-text">sin/cos 双通道编码彻底解决 ±180° 相位跳变问题，输出层显式归一化保证预测始终位于单位圆上。</p>
+        <div class="formula-box small">
+          $$\mathcal{L}_{fwd} = \text{MSE}(s,s_{true}) + \text{MSE}(c,c_{true}) + 0.05\,\mathbb{E}[\|\mathbf{o}\|-1]^2 + 0.1\,\mathbb{E}[\Delta\phi]$$
+        </div>
+      </div>
+      <div class="content-block">
+        <h3>3.3 逆向网络与 Tandem 训练</h3>
+        <div class="net-spec">
+          <div class="ns-row"><span class="ns-label">输入</span><span>1 维归一化目标相位 $\phi/180°$</span></div>
+          <div class="ns-row"><span class="ns-label">隐藏层</span><span>[256, 512, 512, 256, 128]<br/>Kaiming 初始化</span></div>
+          <div class="ns-row"><span class="ns-label">输出</span><span>2 维，Sigmoid → 反归一化至物理范围</span></div>
+          <div class="ns-row"><span class="ns-label">优化器</span><span>Adam(lr=1e-3)，早停耐心 150 轮</span></div>
+        </div>
+        <p class="note-text">训练时对输入目标相位注入 ±1.5° 高斯噪声，增强泛化能力。正向网络权重完全冻结。</p>
+        <div class="formula-box small">
+          $$\mathcal{L}_{tandem} = \text{Huber}(\hat{\phi},\, \phi_{target};\; \delta=10°)$$
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ===== CH4 ===== -->
+<section class="page page-light" id="ch4">
+  <div class="page-inner animate-in">
+    <div class="chapter-label">第四章</div>
+    <h2 class="section-title">实验结果与性能分析</h2>
+
+    <div class="content-block">
+      <h3>4.1 数据集统计特性</h3>
+      <div class="stats-row">
+        <div class="stat-card"><div class="stat-val">4552</div><div class="stat-label">有效样本数（91.0%）</div></div>
+        <div class="stat-card"><div class="stat-val">0.65</div><div class="stat-label">透射率均值</div></div>
+        <div class="stat-card"><div class="stat-val">360°</div><div class="stat-label">相位覆盖范围</div></div>
+        <div class="stat-card"><div class="stat-val">0.0%</div><div class="stat-label">T&gt;0.95 非物理样本</div></div>
+      </div>
+      <div class="img-wrap">
+        <img src="../results/dataset_visualization.png" alt="数据集分析" class="result-img" data-caption="超构表面数据集分析。(a) 相位-宽度关系；(b) 相位分布直方图；(c) 透射率分布；(d) 相位-透射率关系" />
+        <p class="img-caption">图 4.1 超构表面数据集分析</p>
+      </div>
+    </div>
+
+    <div class="two-col">
+      <div class="content-block">
+        <h3>4.2 正向网络性能</h3>
+        <p>正向网络在 241 轮训练后早停收敛，验证集相位预测性能：</p>
+        <table class="data-table">
+          <thead><tr><th>指标</th><th>数值</th></tr></thead>
+          <tbody>
+            <tr><td>相位 MAE</td><td class="good"><strong>1.04°</strong></td></tr>
+            <tr><td>相位 RMSE</td><td>1.47°</td></tr>
+            <tr><td>最大误差</td><td>9.32°</td></tr>
+          </tbody>
+        </table>
+        <div class="img-wrap">
+          <img src="../results/forward_training.png" alt="正向网络训练曲线" class="result-img" data-caption="正向网络训练曲线" />
+          <p class="img-caption">图 4.2 正向网络训练曲线</p>
+        </div>
+        <div class="img-wrap">
+          <img src="../results/forward_validation.png" alt="相位预测散点图" class="result-img" data-caption="相位预测散点图，预测值与真实值紧密沿对角线分布" />
+          <p class="img-caption">图 4.3 相位预测散点图</p>
+        </div>
+      </div>
+      <div class="content-block">
+        <h3>4.3 Tandem 逆向网络性能</h3>
+        <p>Tandem 网络在 433 轮训练后收敛，37 个均匀采样目标相位上的测试结果：</p>
+        <table class="data-table">
+          <thead><tr><th>指标</th><th>数值</th></tr></thead>
+          <tbody>
+            <tr><td>平均相位误差</td><td class="good"><strong>1.72°</strong></td></tr>
+            <tr><td>最大误差</td><td>5.80°</td></tr>
+            <tr><td>中位数误差</td><td>1.47°</td></tr>
+          </tbody>
+        </table>
+        <div class="img-wrap">
+          <img src="../results/tandem_training.png" alt="Tandem训练曲线" class="result-img" data-caption="Tandem 网络训练损失曲线" />
+          <p class="img-caption">图 4.4 Tandem 网络训练曲线</p>
+        </div>
+        <div class="img-wrap">
+          <img src="../results/tandem_validation.png" alt="Tandem逆向设计验证" class="result-img" data-caption="Tandem 逆向设计验证" />
+          <p class="img-caption">图 4.5 Tandem 逆向设计验证</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="content-block">
+      <h3>4.4 30° 反常折射阵列设计结果</h3>
+      <div class="result-highlight">
+        <div class="rh-item"><span class="rh-val good">30.0°</span><p>实现等效折射角</p></div>
+        <div class="rh-item"><span class="rh-val good">0.0°</span><p>折射角偏差</p></div>
+        <div class="rh-item"><span class="rh-val good">1.44°</span><p>阵列平均相位误差</p></div>
+        <div class="rh-item"><span class="rh-val">3.56°</span><p>阵列最大相位误差</p></div>
+      </div>
+      <div class="img-wrap">
+        <img src="../results/metasurface_design_results.png" alt="阵列设计结果" class="result-img" data-caption="30° 反常折射超构表面阵列设计结果。(a) 相位分布；(b) 单元设计误差；(c) 几何参数分布；(d) 阵列结构示意图" />
+        <p class="img-caption">图 4.6 30° 反常折射超构表面阵列设计结果（★ 核心结果图）</p>
+      </div>
+      <div class="img-wrap">
+        <img src="../results/metasurface_parameters.png" alt="几何参数分析" class="result-img" data-caption="几何参数与相位关系分析" />
+        <p class="img-caption">图 4.7 几何参数与相位关系分析</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ===== CH5 ===== -->
+<section class="page" id="ch5">
+  <div class="page-inner animate-in">
+    <div class="chapter-label">第五章</div>
+    <h2 class="section-title">AI 工具使用全记录与避坑总结</h2>
+
+    <div class="content-block">
+      <h3>5.1 AI 工具使用整体流程</h3>
+      <table class="data-table">
+        <thead><tr><th>AI 工具</th><th>核心用途</th><th>贡献度</th></tr></thead>
+        <tbody>
+          <tr><td><strong>GPT-4</strong></td><td>物理模型修正、算法优化、文献支撑、论文撰写</td><td class="good">核心纠错与方案设计</td></tr>
+          <tr><td><strong>DeepSeek</strong></td><td>初版代码生成、文献调研框架搭建</td><td>基础框架生成</td></tr>
+          <tr><td><strong>豆包</strong></td><td>工程 BUG 修复、Python 环境依赖问题解决</td><td>工程落地辅助</td></tr>
+          <tr><td><strong>VSCode Copilot</strong></td><td>代码补全、语法纠错</td><td>代码实现辅助</td></tr>
+        </tbody>
+      </table>
+      <p>整体迭代共 <strong>15 轮</strong>，从 AI 生成的无物理意义初版代码，通过 14 轮持续纠错与优化，最终得到物理严谨、精度达标的完整成果。</p>
+    </div>
+
+    <div class="content-block">
+      <h3>5.2 核心 AI 纠错案例（6 个关键避坑点）</h3>
+      <div class="case-list">
+        <div class="case-item">
+          <div class="case-header"><span class="case-num">案例 1</span><span class="case-title">波长参数无物理依据纠错</span></div>
+          <div class="case-body">
+            <div class="case-err"><span class="tag-err">AI 错误</span>DeepSeek 初版代码随机设定 700 nm 工作波长，无任何文献与应用支撑</div>
+            <div class="case-fix"><span class="tag-fix">纠正方式</span>要求 AI 必须落地真实应用场景，提供顶刊文献依据，最终确定 1550 nm 通信波段</div>
+            <div class="case-result"><span class="tag-ok">成果</span>项目第一次具备真实物理意义与工程应用价值</div>
+          </div>
+        </div>
+        <div class="case-item">
+          <div class="case-header"><span class="case-num">案例 2</span><span class="case-title">广义斯涅尔定律公式不严谨纠错</span></div>
+          <div class="case-body">
+            <div class="case-err"><span class="tag-err">AI 错误</span>直接省略入射项，默认正入射无任何说明，物理推导不严谨</div>
+            <div class="case-fix"><span class="tag-fix">纠正方式</span>要求先写完整物理公式，解释每一项物理意义，再单独声明工程简化假设</div>
+            <div class="case-result"><span class="tag-ok">成果</span>完全符合电动力学课程学术规范，避免了公式简化无说明的低级学术错误</div>
+          </div>
+        </div>
+        <div class="case-item">
+          <div class="case-header"><span class="case-num">案例 3</span><span class="case-title">数据集生成无物理依据纠错</span></div>
+          <div class="case-body">
+            <div class="case-err"><span class="tag-err">AI 错误</span>仅用经验公式生成数据，无麦克斯韦方程支撑，无物理约束</div>
+            <div class="case-fix"><span class="tag-fix">纠正方式</span>要求基于电磁理论数值求解，加入亚波长、能量守恒等物理约束，采用等效介质理论</div>
+            <div class="case-result"><span class="tag-ok">成果</span>数据集从无意义数值映射升级为物理自洽的高质量训练数据，是模型高精度的核心基础</div>
+          </div>
+        </div>
+        <div class="case-item">
+          <div class="case-header"><span class="case-num">案例 4</span><span class="case-title">深度学习网络无物理约束纠错</span></div>
+          <div class="case-body">
+            <div class="case-err"><span class="tag-err">AI 错误</span>纯数值拟合黑箱 MLP，损失函数无物理约束，未解决逆设计非唯一性问题</div>
+            <div class="case-fix"><span class="tag-fix">纠正方式</span>要求采用 Tandem 架构，损失函数嵌入能量守恒、相位连续性约束，明确算法选型的文献依据</div>
+            <div class="case-result"><span class="tag-ok">成果</span>网络从黑箱变为物理可解释模型，相位误差从 20°+ 降至 1° 级别</div>
+          </div>
+        </div>
+        <div class="case-item">
+          <div class="case-header"><span class="case-num">案例 5</span><span class="case-title">模型参数不符合制造工艺纠错</span></div>
+          <div class="case-body">
+            <div class="case-err"><span class="tag-err">AI 错误</span>将纳米柱高度 H 作为可训练参数，无实际光刻工艺可行性</div>
+            <div class="case-fix"><span class="tag-fix">纠正方式</span>要求固定 H=900 nm，提供文献与物理依据，简化模型维度</div>
+            <div class="case-result"><span class="tag-ok">成果</span>模型训练难度大幅降低，收敛速度提升 3 倍，同时符合实际制造工艺</div>
+          </div>
+        </div>
+        <div class="case-item">
+          <div class="case-header"><span class="case-num">案例 6</span><span class="case-title">透射率虚高违反物理定律纠错</span></div>
+          <div class="case-body">
+            <div class="case-err"><span class="tag-err">AI 错误</span>理想 FP 模型导致大量样本透射率约等于 1.0，违反无源介质能量守恒</div>
+            <div class="case-fix"><span class="tag-fix">纠正方式</span>要求加入模式耦合损耗、侧壁散射损耗，让透射率回归文献合理区间</div>
+            <div class="case-result"><span class="tag-ok">成果</span>数据集完全符合物理规律，结果可信度大幅提升</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="content-block">
+      <h3>5.2.1 AI 交互过程记录</h3>
+      <div class="two-col">
+        <div class="img-wrap">
+          <img src="../图片/AI交互1.png" alt="AI交互记录1" class="result-img" data-caption="AI 工具交互过程记录（一）" />
+          <p class="img-caption">图 5.1 AI 工具交互过程记录（一）</p>
+        </div>
+        <div class="img-wrap">
+          <img src="../图片/AI交互2.png" alt="AI交互记录2" class="result-img" data-caption="AI 工具交互过程记录（二）" />
+          <p class="img-caption">图 5.2 AI 工具交互过程记录（二）</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="content-block">
+      <h3>5.3 AI 使用经验总结</h3>
+      <div class="summary-grid">
+        <div class="sg-item"><span class="sg-num">1</span><strong>不能把 AI 当黑箱</strong><p>所有 AI 输出的物理公式、参数、模型必须溯源文献，核对物理合理性</p></div>
+        <div class="sg-item"><span class="sg-num">2</span><strong>精准提示词是核心</strong><p>明确要求 AI 给出文献依据、物理意义、工程约束，可大幅降低错误率</p></div>
+        <div class="sg-item"><span class="sg-num">3</span><strong>先物理后算法</strong><p>必须先把物理模型、约束条件确定，再进入深度学习算法设计，避免本末倒置</p></div>
+        <div class="sg-item"><span class="sg-num">4</span><strong>工程落地必须校验</strong><p>AI 生成的代码必须逐行核对，环境、依赖、运行结果必须手动验证</p></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ===== CH6 ===== -->
+<section class="page page-light" id="ch6">
+  <div class="page-inner animate-in">
+    <div class="chapter-label">第六章</div>
+    <h2 class="section-title">结论与展望</h2>
+
+    <div class="content-block">
+      <h3>6.1 研究结论</h3>
+      <p>本文提出并实现了一种结合等效介质电磁建模与 Tandem 深度学习网络的超构表面逆向设计系统。在 1550 nm 通信波长下，完成了从物理数据集生成、正向代理模型训练到逆向结构生成的全链路构建，并成功设计了 30° 反常折射一维超构表面阵列。</p>
+      <div class="conclusion-metrics">
+        <div class="cm-item"><span class="cm-val good">1.04°</span><p>正向网络相位 MAE</p></div>
+        <div class="cm-item"><span class="cm-val good">1.72°</span><p>逆向网络平均误差</p></div>
+        <div class="cm-item"><span class="cm-val good">1.44°</span><p>阵列平均相位误差</p></div>
+        <div class="cm-item"><span class="cm-val good">0.0°</span><p>折射角偏差</p></div>
+      </div>
+      <p>各项指标均大幅优于预设工程阈值，充分证明了将电磁物理先验知识嵌入深度学习框架的必要性与有效性，为超构表面的智能化快速设计提供了一条可行且高精度的路径。</p>
+    </div>
+
+    <div class="content-block">
+      <h3>6.2 未来展望</h3>
+      <div class="future-list">
+        <div class="future-item"><span class="fi-icon">→</span><div><strong>联合优化</strong><p>在损失函数中引入透射率权重项，实现相位与效率的联合优化</p></div></div>
+        <div class="future-item"><span class="fi-icon">→</span><div><strong>工程验证</strong><p>补充制造容差分析、宽带响应验证，进一步提升设计的工程实用性</p></div></div>
+        <div class="future-item"><span class="fi-icon">→</span><div><strong>任务迁移</strong><p>将框架迁移至二维超透镜、偏振多路复用等更复杂的设计任务</p></div></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ===== REFS ===== -->
+<section class="page" id="refs">
+  <div class="page-inner animate-in">
+    <div class="chapter-label">参考文献</div>
+    <h2 class="section-title">References</h2>
+    <ol class="ref-list">
+      <li>YU N, CAPASSO F. Flat optics with designer metasurfaces[J]. <em>Nature Materials</em>, 2014, 13(2): 139-150. <a href="https://doi.org/10.1038/nmat3839" target="_blank">DOI:10.1038/nmat3839</a></li>
+      <li>KHORASANINEJAD M, CHEN W T, DEVLIN R C, et al. Metalenses at visible wavelengths: Diffraction-limited focusing and subwavelength resolution imaging[J]. <em>Science</em>, 2016, 352(6290): 1190-1194. <a href="https://doi.org/10.1126/science.aaf6644" target="_blank">DOI:10.1126/science.aaf6644</a></li>
+      <li>DONG Y, AN S, JIANG H, et al. Advanced deep learning approaches in metasurface modeling and design: A review[J]. <em>Progress in Quantum Electronics</em>, 2025, 99: 100554. <a href="https://doi.org/10.1016/j.pquantelec.2025.100554" target="_blank">DOI:10.1016/j.pquantelec.2025.100554</a></li>
+      <li>MALKIEL I, MREJEN M, NAGLER A, et al. Plasmonic nanostructure design and characterization via Deep Learning[J]. <em>Light: Science &amp; Applications</em>, 2018, 7(1): 60. <a href="https://doi.org/10.1038/s41377-018-0060-7" target="_blank">DOI:10.1038/s41377-018-0060-7</a></li>
+      <li>PEURIFOY J, SHEN Y, JING L, et al. Nanophotonic particle simulation and inverse design using artificial neural networks[J]. <em>Science Advances</em>, 2018, 4(6): eaar4206. <a href="https://doi.org/10.1126/sciadv.aar4206" target="_blank">DOI:10.1126/sciadv.aar4206</a></li>
+      <li>DEVLIN R, KHORASANINEJAD R, CHEN W T, et al. High efficiency dielectric metasurfaces at visible wavelengths[EB/OL]. 2016. <a href="https://doi.org/10.48550/arXiv.1603.02735" target="_blank">DOI:10.48550/arXiv.1603.02735</a></li>
+      <li>MA W, CHENG F, LIU Y. Deep-Learning-Enabled On-Demand Design of Chiral Metamaterials[J]. <em>ACS Nano</em>, 2018, 12(6): 6326-6334. <a href="https://doi.org/10.1021/acsnano.8b03569" target="_blank">DOI:10.1021/acsnano.8b03569</a></li>
+      <li>JIANG J, SELL D, HOYER S, et al. Free-Form Diffractive Metagrating Design Based on Generative Adversarial Networks[J]. <em>ACS Nano</em>, 2019, 13(8): 8872-8878. <a href="https://doi.org/10.1021/acsnano.9b02371" target="_blank">DOI:10.1021/acsnano.9b02371</a></li>
+      <li>ARBABI A, HORIE Y, BAGHERI M, et al. Dielectric metasurfaces for complete control of phase and polarization with subwavelength spatial resolution and high transmission[J]. <em>Nature Nanotechnology</em>, 2015, 10(11): 937-943. <a href="https://doi.org/10.1038/nnano.2015.186" target="_blank">DOI:10.1038/nnano.2015.186</a></li>
+    </ol>
+  </div>
+</section>
+
+<script src="script.js"></script>
+</body>
+</html>
